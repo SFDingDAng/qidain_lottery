@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽奖程序</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            margin: 0;
+            padding: 0;
+        }
+
+        .box {
+            flex: 1;
+            height: 100vh;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="box" id="leftBox">
+        <h3>备选框</h3>
+        <textarea id="candidates" rows="35" cols="100" aria-label="备选框"></textarea>
+        <br>
+        <button onclick="startLottery()">开始抽奖</button>
+    </div>
+    <div class="box" id="rightBox">
+        <h3>中奖人</h3>
+        <p style="color: red" id="winnerCount">中奖人数：0</p>
+        <ul id="winners"></ul>
+    </div>
+    <script>
+        let monthId = "202309"
+        let winnerCounter = 0;
+        function startLottery() {
+            const candidatesTextarea = document.getElementById('candidates');
+            const candidates = candidatesTextarea.value.trim().split('\n');
+            if (candidates.length === 0) {
+                alert('请填写备选框中的数字！');
+                return;
+            }
+
+            // 随机抽取一个中奖者
+            randomNum = fetch('https://www.random.org/decimal-fractions/?num=1&dec=20&col=1&format=plain',{
+                method: 'GET'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const randomIndex = Math.floor(data * candidates.length);
+                const winner = candidates[randomIndex];
+                // 在中奖者列表中添加中奖者
+                const winnersList = document.getElementById('winners');
+                const listItem = document.createElement('li');
+                
+                lotteryquery = fetch('/querylottery',{
+                    method: 'POST',
+                    headers: {
+                    'Content-Type': 'text/plain'
+                 },
+                    body: winner
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error){
+                        listItem.textContent = winner+','+data.Nickname+',月票ID:'+data.TicketId;
+                        winnersList.appendChild(listItem);
+                        winnerCounter++;
+                        const winnerCountElement = document.getElementById('winnerCount');
+                        winnerCountElement.textContent = `中奖人数：${winnerCounter}`;
+                    }else if (data.error =="用户名不匹配"){
+                        listItem.textContent = winner+','+data.error+','+data.Nickname+',现用名:'+data.Nowname;
+                        winnersList.appendChild(listItem);
+                    }else{
+                        listItem.textContent = winner+','+data.error+','+data.Nowname;
+                        winnersList.appendChild(listItem);
+                    }
+                })
+                
+                // 从备选框中移除中奖者
+                candidates.splice(randomIndex, 1);
+                candidatesTextarea.value = candidates.join('\n');
+                })
+            
+
+
+
+        }
+    </script>
+</body>
+</html>
